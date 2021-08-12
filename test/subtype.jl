@@ -1577,7 +1577,7 @@ f31082(::Pair{B, C}, ::C, ::C) where {B, C} = 1
                Tuple{Type{Val{T}},Int,T} where T)
 @testintersect(Tuple{Type{Val{T}},Integer,T} where T,
                Tuple{Type,Int,Integer},
-               Tuple{Type{Val{T}},Int,T} where T<:Integer)
+               Tuple{Type{Val{T}},Int,Integer} where T)
 @testintersect(Tuple{Type{Val{T}},Integer,T} where T>:Integer,
                Tuple{Type,Int,Integer},
                Tuple{Type{Val{T}},Int,Integer} where T>:Integer)
@@ -1866,7 +1866,7 @@ let A = Tuple{Type{T} where T<:Ref, Ref, Union{T, Union{Ref{T}, T}} where T<:Ref
     I = typeintersect(A,B)
     # this was a case where <: disagreed with === (due to a badly-normalized type)
     @test I == typeintersect(A,B)
-    @test I == Tuple{Type{T}, Ref{T}, Union{Ref{T}, T}} where T<:Ref
+    @test I == Tuple{Type{T}, Ref{T}, Ref} where T<:Ref
 end
 
 # issue #39218
@@ -1946,9 +1946,21 @@ let A = Tuple{UnionAll, Vector{Any}},
     B = Tuple{Type{T}, T} where T<:AbstractArray,
     I = typeintersect(A, B)
     @test !isconcretetype(I)
-    @test_broken I == Tuple{Type{T}, Vector{Any}} where T<:AbstractArray
+    @test I == Tuple{Type{T}, Vector{Any}} where T<:AbstractArray
 end
 
 @testintersect(Tuple{Type{Vector{<:T}}, T} where {T<:Integer},
                Tuple{Type{T}, AbstractArray} where T<:Array,
+               Bottom)
+
+let A = Tuple{Any, Type{Ref{_A}} where _A},
+    B = Tuple{Type{T}, Type{<:Union{Ref{T}, T}}} where T,
+    I = typeintersect(A, B)
+    @test I != Union{}
+    # TODO: this intersection result is still too narrow
+    @test_broken Tuple{Type{Ref{Integer}}, Type{Ref{Integer}}} <: I
+end
+
+@testintersect(Tuple{Type{T}, T} where T<:(Tuple{Vararg{_A, _B}} where _B where _A),
+               Tuple{Type{Tuple{Vararg{_A, N}} where _A<:F}, Pair{N, F}} where F where N,
                Bottom)

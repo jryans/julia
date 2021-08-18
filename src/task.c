@@ -559,9 +559,6 @@ static void JL_NORETURN throw_internal(jl_task_t *ct, jl_value_t *exception JL_M
     assert(!jl_get_safe_restore());
     jl_ptls_t ptls = ct->ptls;
     ptls->io_wait = 0;
-    // @time needs its compile timer disabled on error,
-    // and cannot use a try-finally as it would break scope for assignments
-    jl_measure_compile_time[ptls->tid] = 0;
     JL_GC_PUSH1(&exception);
     jl_gc_unsafe_enter(ptls);
     if (exception) {
